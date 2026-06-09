@@ -90,22 +90,17 @@
 
 .articleBody {
   flex: 1;
-  overflow-y: scroll;
-  -webkit-overflow-scrolling: touch;
-  scrollbar-width: none;
-  white-space: normal;
-  outline: none;
-
-  /* Forces older browsers to enable scrolling */
+  /* overflow:hidden — skrolas vykdomas per translateY, ne CSS scroll */
+  overflow: hidden;
   min-height: 0;
   height: 100%;
+  position: relative;
+}
 
-  /* Reikalinga Samsung S6 Tizen naršyklei — be šio scrollTop priskyrimas ignoruojamas */
-  /* will-change: transform yra PAŠALINTA — ji sulaužo scrollTo() Tizen naršyklėje */
-
-  &::-webkit-scrollbar {
-    display: none;
-  }
+.articleBodyInner {
+  /* Vidinis div — js judina jį per style.transform = 'translateY(-Npx)' */
+  position: relative;
+  white-space: normal;
 
   p,
   div,

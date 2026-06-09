@@ -13,8 +13,11 @@ export default function NewsCarousel({ initialItems }: NewsCarouselProps) {
 
   const [currentIndex, setCurrentIndex] = useState(0);
 
-  // Kiekvienam slaidui savo ref — Tizen nesugeba scrollTop rašyti kai ref persijungia
-  const scrollRefs = useRef<{ [idx: number]: HTMLDivElement | null }>({});
+  // outerRefs — wrapper su overflow:hidden (matavimui)
+  // innerRefs — vidinis div, kurio transform judina turinį
+  // Tizen 4 / Chromium 56: scrollTop ir scrollTo() neveikia — naudojame translateY
+  const outerRefs = useRef<{ [idx: number]: HTMLDivElement | null }>({});
+  const innerRefs = useRef<{ [idx: number]: HTMLDivElement | null }>({});
   const autoRotateTimerRef = useRef<NodeJS.Timeout | null>(null);
   const autoScrollTimerRef = useRef<NodeJS.Timeout | null>(null);
   const autoScrollDelayRef = useRef<NodeJS.Timeout | null>(null);
@@ -72,29 +75,32 @@ export default function NewsCarousel({ initialItems }: NewsCarouselProps) {
     if (autoScrollTimerRef.current) clearInterval(autoScrollTimerRef.current);
     if (autoScrollDelayRef.current) clearTimeout(autoScrollDelayRef.current);
 
-    // Laukiam kito animacijos kadro — Tizen reikia laiko kol DOM apsistato
+    // RAF — laukiam kol Tizen DOM apsistato po slaidų keitimo
     requestAnimationFrame(() => {
-      const node = scrollRefs.current[currentIndex];
-      if (!node) return;
+      const inner = innerRefs.current[currentIndex];
+      if (!inner) return;
 
+      // Grąžinam į viršų per CSS transform (ne scrollTop — Chromium 56 neveikia)
       scrollPosRef.current = 0;
-
-      // scrollTo() veikia patikimiau nei scrollTop priskyrimas Tizen naršyklėje
-      try { node.scrollTo(0, 0); } catch (e) { node.scrollTop = 0; }
+      inner.style.webkitTransform = 'translateY(0px)';
+      inner.style.transform = 'translateY(0px)';
 
       autoScrollDelayRef.current = setTimeout(() => {
         autoScrollTimerRef.current = setInterval(() => {
-          const n = scrollRefs.current[currentIndex];
-          if (!n) return;
+          const outer = outerRefs.current[currentIndex];
+          const inn = innerRefs.current[currentIndex];
+          if (!outer || !inn) return;
 
-          const maxScroll = n.scrollHeight - n.clientHeight;
-          if (scrollPosRef.current >= maxScroll - 2) {
+          const maxScroll = inn.offsetHeight - outer.clientHeight;
+          if (maxScroll <= 2 || scrollPosRef.current >= maxScroll - 2) {
             if (autoScrollTimerRef.current) clearInterval(autoScrollTimerRef.current);
             return;
           }
 
           scrollPosRef.current = Math.min(scrollPosRef.current + 1, maxScroll);
-          try { n.scrollTo(0, scrollPosRef.current); } catch (e) { n.scrollTop = scrollPosRef.current; }
+          var t = 'translateY(-' + scrollPosRef.current + 'px)';
+          inn.style.webkitTransform = t;
+          inn.style.transform = t;
         }, 80);
       }, 3000);
     });
@@ -142,10 +148,14 @@ export default function NewsCarousel({ initialItems }: NewsCarouselProps) {
                   {item.category} | {item.date}
                 </div>
                 <div
-                  ref={(el) => { scrollRefs.current[idx] = el; }}
+                  ref={(el) => { outerRefs.current[idx] = el; }}
                   className={styles.articleBody}
                 >
-                  <div dangerouslySetInnerHTML={{ __html: item.description }} />
+                  <div
+                    ref={(el) => { innerRefs.current[idx] = el; }}
+                    className={styles.articleBodyInner}
+                    dangerouslySetInnerHTML={{ __html: item.description }}
+                  />
                 </div>
               </div>
             </div>
