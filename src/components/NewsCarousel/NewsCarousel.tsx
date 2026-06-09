@@ -12,8 +12,6 @@ export default function NewsCarousel({ initialItems }: NewsCarouselProps) {
   useEffect(() => { itemsRef.current = items; }, [items]);
 
   const [currentIndex, setCurrentIndex] = useState(0);
-  // Sekame praeita indeksą kad išlaikytume abu slaidus DOM'e per fade transiciją
-  const prevIndexRef = useRef(0);
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const autoRotateTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -72,8 +70,6 @@ export default function NewsCarousel({ initialItems }: NewsCarouselProps) {
     if (autoScrollTimerRef.current) clearInterval(autoScrollTimerRef.current);
     if (autoScrollDelayRef.current) clearTimeout(autoScrollDelayRef.current);
 
-    prevIndexRef.current = currentIndex;
-
     if (scrollRef.current) scrollRef.current.scrollTop = 0;
 
     autoScrollDelayRef.current = setTimeout(() => {
@@ -116,9 +112,6 @@ export default function NewsCarousel({ initialItems }: NewsCarouselProps) {
       <div className={styles.newsContainer}>
         {items.map((item, idx) => {
           const isActive = idx === currentIndex;
-          // Renderinti turinį: tik aktyviam slaidui ir praeitam (per fade transiciją)
-          // Kiti slaidai DOM'e yra, bet be HTML turinio — taupo atmintį
-          const shouldRenderContent = isActive || idx === prevIndexRef.current;
 
           return (
             <div
@@ -137,9 +130,7 @@ export default function NewsCarousel({ initialItems }: NewsCarouselProps) {
                   ref={isActive ? scrollRef : null}
                   className={styles.articleBody}
                 >
-                  {shouldRenderContent && (
-                    <div dangerouslySetInnerHTML={{ __html: item.description }} />
-                  )}
+                  <div dangerouslySetInnerHTML={{ __html: item.description }} />
                 </div>
               </div>
             </div>
