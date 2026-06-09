@@ -101,8 +101,7 @@
   height: 100%;
 
   /* Reikalinga Samsung S6 Tizen naršyklei — be šio scrollTop priskyrimas ignoruojamas */
-  will-change: transform;
-  -webkit-backface-visibility: hidden;
+  /* will-change: transform yra PAŠALINTA — ji sulaužo scrollTo() Tizen naršyklėje */
 
   &::-webkit-scrollbar {
     display: none;

@@ -13,10 +13,12 @@ export default function NewsCarousel({ initialItems }: NewsCarouselProps) {
 
   const [currentIndex, setCurrentIndex] = useState(0);
 
-  const scrollRef = useRef<HTMLDivElement>(null);
+  // Kiekvienam slaidui savo ref — Tizen nesugeba scrollTop rašyti kai ref persijungia
+  const scrollRefs = useRef<{ [idx: number]: HTMLDivElement | null }>({});
   const autoRotateTimerRef = useRef<NodeJS.Timeout | null>(null);
   const autoScrollTimerRef = useRef<NodeJS.Timeout | null>(null);
   const autoScrollDelayRef = useRef<NodeJS.Timeout | null>(null);
+  const scrollPosRef = useRef<number>(0);
 
   // Fono naujienos atnaujinimas kas 30 min per XHR (Tizen suderinamas)
   useEffect(() => {
@@ -70,19 +72,32 @@ export default function NewsCarousel({ initialItems }: NewsCarouselProps) {
     if (autoScrollTimerRef.current) clearInterval(autoScrollTimerRef.current);
     if (autoScrollDelayRef.current) clearTimeout(autoScrollDelayRef.current);
 
-    if (scrollRef.current) scrollRef.current.scrollTop = 0;
+    // Laukiam kito animacijos kadro — Tizen reikia laiko kol DOM apsistato
+    requestAnimationFrame(() => {
+      const node = scrollRefs.current[currentIndex];
+      if (!node) return;
 
-    autoScrollDelayRef.current = setTimeout(() => {
-      autoScrollTimerRef.current = setInterval(() => {
-        const node = scrollRef.current;
-        if (!node) return;
-        if (node.scrollTop + node.clientHeight >= node.scrollHeight - 2) {
-          if (autoScrollTimerRef.current) clearInterval(autoScrollTimerRef.current);
-          return;
-        }
-        node.scrollTop += 1;
-      }, 80);
-    }, 3000);
+      scrollPosRef.current = 0;
+
+      // scrollTo() veikia patikimiau nei scrollTop priskyrimas Tizen naršyklėje
+      try { node.scrollTo(0, 0); } catch (e) { node.scrollTop = 0; }
+
+      autoScrollDelayRef.current = setTimeout(() => {
+        autoScrollTimerRef.current = setInterval(() => {
+          const n = scrollRefs.current[currentIndex];
+          if (!n) return;
+
+          const maxScroll = n.scrollHeight - n.clientHeight;
+          if (scrollPosRef.current >= maxScroll - 2) {
+            if (autoScrollTimerRef.current) clearInterval(autoScrollTimerRef.current);
+            return;
+          }
+
+          scrollPosRef.current = Math.min(scrollPosRef.current + 1, maxScroll);
+          try { n.scrollTo(0, scrollPosRef.current); } catch (e) { n.scrollTop = scrollPosRef.current; }
+        }, 80);
+      }, 3000);
+    });
 
     return () => {
       if (autoScrollTimerRef.current) clearInterval(autoScrollTimerRef.current);
@@ -127,7 +142,7 @@ export default function NewsCarousel({ initialItems }: NewsCarouselProps) {
                   {item.category} | {item.date}
                 </div>
                 <div
-                  ref={isActive ? scrollRef : null}
+                  ref={(el) => { scrollRefs.current[idx] = el; }}
                   className={styles.articleBody}
                 >
                   <div dangerouslySetInnerHTML={{ __html: item.description }} />
