@@ -13,35 +13,26 @@ export default function NewsCarousel({ initialItems }: NewsCarouselProps) {
 
   const [currentIndex, setCurrentIndex] = useState(0);
 
-  // outerRefs — wrapper su overflow:hidden (matavimui)
-  // innerRefs — vidinis div, kurio transform judina turinį
-  // Tizen 4 / Chromium 56: scrollTop ir scrollTo() neveikia — naudojame translateY
-  const outerRefs = useRef<{ [idx: number]: HTMLDivElement | null }>({});
-  const innerRefs = useRef<{ [idx: number]: HTMLDivElement | null }>({});
-  const autoRotateTimerRef = useRef<NodeJS.Timeout | null>(null);
-  const autoScrollTimerRef = useRef<NodeJS.Timeout | null>(null);
-  const autoScrollDelayRef = useRef<NodeJS.Timeout | null>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
   const scrollPosRef = useRef<number>(0);
+  const [isPaused, setIsPaused] = useState(false);
+  const isPausedRef = useRef(false);
+  
+  const autoRotateTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   // Fono naujienos atnaujinimas kas 30 min per XHR (Tizen suderinamas)
   useEffect(() => {
-    const fetchLatestNews = () => {
-      var xhr = new XMLHttpRequest();
-      xhr.open('GET', 'http://193.219.91.103:11857/api/news?t=' + new Date().getTime(), true);
-      xhr.onreadystatechange = function () {
-        if (xhr.readyState === 4 && xhr.status === 200) {
-          try {
-            var freshData = JSON.parse(xhr.responseText);
-            if (freshData && freshData.length > 0) {
-              setItems(freshData);
-              setCurrentIndex(function (prev) { return prev >= freshData.length ? 0 : prev; });
-            }
-          } catch (e) {
-            console.error('Klaida gaunant naujienas:', e);
-          }
+    const fetchLatestNews = async () => {
+      try {
+        const res = await fetch(`/api/news?t=${new Date().getTime()}&r=${Math.random()}`);
+        const freshData = await res.json();
+        if (freshData && freshData.length > 0) {
+          setItems(freshData);
+          setCurrentIndex(function (prev) { return prev >= freshData.length ? 0 : prev; });
         }
-      };
-      xhr.send();
+      } catch (e) {
+        console.error('Klaida gaunant naujienas:', e);
+      }
     };
 
     fetchLatestNews();
@@ -71,41 +62,45 @@ export default function NewsCarousel({ initialItems }: NewsCarouselProps) {
     startAutoRotation();
   };
 
+  // Reset scroll position when slide changes
   useEffect(() => {
-    if (autoScrollTimerRef.current) clearInterval(autoScrollTimerRef.current);
-    if (autoScrollDelayRef.current) clearTimeout(autoScrollDelayRef.current);
-
-    // RAF — laukiam kol Tizen DOM apsistato po slaidų keitimo
-    requestAnimationFrame(() => {
-      const inner = innerRefs.current[currentIndex];
-      if (!inner) return;
-
-      // Grąžinam į viršų per CSS transform (ne scrollTop — Chromium 56 neveikia)
-      // Grąžinam į viršų naudojant top
+    if (scrollRef.current) {
+      scrollRef.current.scrollTop = 0;
       scrollPosRef.current = 0;
-      inner.style.top = '0px';
+    }
+  }, [currentIndex]);
 
-      autoScrollDelayRef.current = setTimeout(() => {
-        autoScrollTimerRef.current = setInterval(() => {
-          const outer = outerRefs.current[currentIndex];
-          const inn = innerRefs.current[currentIndex];
-          if (!outer || !inn) return;
+  // RAF scroll engine
+  useEffect(() => {
+    let animationFrameId: number = 0;
 
-          const maxScroll = inn.offsetHeight - outer.clientHeight;
-          if (maxScroll <= 2 || scrollPosRef.current >= maxScroll - 2) {
-            if (autoScrollTimerRef.current) clearInterval(autoScrollTimerRef.current);
-            return;
+    const delayTimeout = setTimeout(() => {
+      if (!scrollRef.current) return;
+
+      const scrollHeight = scrollRef.current.scrollHeight;
+      const clientHeight = scrollRef.current.clientHeight;
+
+      if (scrollHeight <= clientHeight) return;
+
+      const scrollAnimation = () => {
+        if (scrollRef.current && !isPausedRef.current) {
+          if (scrollPosRef.current + clientHeight < scrollHeight - 2) {
+            scrollPosRef.current += 0.5;
+            const newScrollTop = Math.floor(scrollPosRef.current);
+            if (scrollRef.current.scrollTop !== newScrollTop) {
+              scrollRef.current.scrollTop = newScrollTop;
+            }
           }
+        }
+        animationFrameId = requestAnimationFrame(scrollAnimation);
+      };
 
-          scrollPosRef.current = Math.min(scrollPosRef.current + 1, maxScroll);
-          inn.style.top = '-' + scrollPosRef.current + 'px';
-        }, 80);
-      }, 3000);
-    });
+      animationFrameId = requestAnimationFrame(scrollAnimation);
+    }, 2000);
 
     return () => {
-      if (autoScrollTimerRef.current) clearInterval(autoScrollTimerRef.current);
-      if (autoScrollDelayRef.current) clearTimeout(autoScrollDelayRef.current);
+      clearTimeout(delayTimeout);
+      if (animationFrameId) cancelAnimationFrame(animationFrameId);
     };
   }, [currentIndex]);
 
@@ -146,15 +141,10 @@ export default function NewsCarousel({ initialItems }: NewsCarouselProps) {
                   {item.category} | {item.date}
                 </div>
                 <div
-                  ref={(el) => { outerRefs.current[idx] = el; }}
+                  ref={isActive ? scrollRef : null}
                   className={styles.articleBody}
-                >
-                  <div
-                    ref={(el) => { innerRefs.current[idx] = el; }}
-                    className={styles.articleBodyInner}
-                    dangerouslySetInnerHTML={{ __html: item.description }}
-                  />
-                </div>
+                  dangerouslySetInnerHTML={{ __html: item.description }}
+                />
               </div>
             </div>
           );

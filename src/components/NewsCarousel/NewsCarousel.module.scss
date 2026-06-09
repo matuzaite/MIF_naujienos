@@ -90,26 +90,19 @@
 
 .articleBody {
   flex: 1;
-  /* overflow:hidden — skrolas vykdomas per translateY, ne CSS scroll */
-  overflow: hidden;
+  overflow-y: scroll;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  white-space: normal;
+  outline: none;
   min-height: 0;
   height: 100%;
-  position: relative;
-}
 
-.articleBodyInner {
-  /* Vidinis div — js judina jį per style.top = '-Npx' */
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  white-space: normal;
+  &::-webkit-scrollbar {
+    display: none;
+  }
 
-  p,
-  div,
-  blockquote,
-  ul,
-  ol {
+  p, div, blockquote, ul, ol {
     display: block;
     font-size: 1.15rem;
     line-height: 1.7;
