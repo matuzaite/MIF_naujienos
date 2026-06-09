@@ -37,9 +37,14 @@ function fixImageSrcs(html: string): string {
 
         if (best) {
             try {
-                img.setAttribute('src', new URL(best, BASE).href);
+                var absoluteUrl = new URL(best, BASE).href;
+                // Nukreipiame per Next.js image optimizer:
+                // browser gaus WebP 800px, q=60 (~50-150 KB) vietoj originalaus JPG/PNG (1-3 MB)
+                var optimizedUrl = '/_next/image?url=' + encodeURIComponent(absoluteUrl) + '&w=800&q=60';
+                img.setAttribute('src', optimizedUrl);
+                img.setAttribute('loading', 'lazy');
+                img.setAttribute('decoding', 'async');
             } catch (error) {
-                // Pakeista: tuščias catch {} → catch (error) {}
                 img.setAttribute('src', best);
             }
         }
@@ -60,13 +65,9 @@ export async function fetchNews() {
         return root.querySelectorAll('item')
             .slice(0, config.scraping.maxItems)
             .map(function(item) {
-                // Pakeista: ?.text ?? '' → && patikrinimai su ternary
                 var titleNode = item.querySelector('title');
-                var titleRaw = titleNode && titleNode.text ? titleNode.text : '';
-                var title = titleRaw.replace(/<[^>]*>?/gm, '').trim();
+                var title = (titleNode && titleNode.text ? titleNode.text : '').replace(/<[^>]*>?/gm, '').trim();
 
-                var linkNode = item.querySelector('link');
-                var link = (linkNode && linkNode.text ? linkNode.text : '').trim();
 
                 var pubDateNode = item.querySelector('pubDate');
                 var pubDate = pubDateNode && pubDateNode.text ? pubDateNode.text : '';
@@ -76,17 +77,14 @@ export async function fetchNews() {
                 ).toLocaleDateString('lt-LT');
 
                 var descNode = item.querySelector('description');
-                // Pakeista: ?.innerHTML ?? '' → && patikrinimai su ternary
                 var description = descNode && descNode.innerHTML ? descNode.innerHTML : '';
 
                 if (description.includes('<![CDATA[')) {
-                    // Pakeista: .replaceAll() → .split().join()
                     description = description.split('<![CDATA[').join('').split(']]>').join('');
                 }
                 description = fixImageSrcs(description);
 
-                var id = link ? link : Math.random().toString();
-                return { id: id, title: title, link: link, date: date, category: 'Naujiena', description: description, image: '' };
+                return { title: title, date: date, category: 'Naujiena', description: description };
             });
 
     } catch (error) {

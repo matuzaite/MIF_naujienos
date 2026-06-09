@@ -1,6 +1,5 @@
 'use client';
-import { useState, useEffect, useRef, useCallback } from 'react';
-import Image from 'next/image';
+import { useState, useEffect, useRef } from 'react';
 import styles from './NewsCarousel.module.scss';
 
 interface NewsCarouselProps {
@@ -11,51 +10,49 @@ export default function NewsCarousel({ initialItems }: NewsCarouselProps) {
   const [items, setItems] = useState<any[]>(initialItems);
   const itemsRef = useRef(items);
   useEffect(() => { itemsRef.current = items; }, [items]);
-  
+
   const [currentIndex, setCurrentIndex] = useState(0);
+  // Sekame praeita indeksą kad išlaikytume abu slaidus DOM'e per fade transiciją
+  const prevIndexRef = useRef(0);
+
   const scrollRef = useRef<HTMLDivElement>(null);
   const autoRotateTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const autoScrollTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const autoScrollDelayRef = useRef<NodeJS.Timeout | null>(null);
 
+  // Fono naujienos atnaujinimas kas 30 min per XHR (Tizen suderinamas)
   useEffect(() => {
-    // XMLHttpRequest — universally supported on all Tizen versions,
-    // avoids any fetch/AbortController compatibility issues on S6.
     const fetchLatestNews = () => {
       var xhr = new XMLHttpRequest();
-      // Naudojame pilną absoliutų IP adresą, kad veiktų iš file:// aplinkos
-      xhr.open('GET', 'http://193.219.91.103:11857/api/news?t=' + new Date().getTime() + '&r=' + Math.random(), true);
+      xhr.open('GET', 'http://193.219.91.103:11857/api/news?t=' + new Date().getTime(), true);
       xhr.onreadystatechange = function () {
         if (xhr.readyState === 4 && xhr.status === 200) {
           try {
             var freshData = JSON.parse(xhr.responseText);
-            // Jei gavome naujienų, pakeičiame karuselės duomenis
             if (freshData && freshData.length > 0) {
               setItems(freshData);
-              // Apsauga: jei buvome 5 slaide, o naujienų liko tik 4, grįžtame į pradžią
               setCurrentIndex(function (prev) { return prev >= freshData.length ? 0 : prev; });
             }
           } catch (e) {
-            console.error('Klaida gaunant šviežias naujienas:', e);
+            console.error('Klaida gaunant naujienas:', e);
           }
         }
       };
       xhr.send();
     };
 
-    // Iškviečiame funkciją iškart, kai tik komponentas atsiranda ekrane
     fetchLatestNews();
-
-    // Automatiškai ir tyliai fone ieškome naujų žinių kas 30 minučių (1800000 ms)
     var updateInterval = setInterval(fetchLatestNews, 1800000);
-
     return function () { clearInterval(updateInterval); };
   }, []);
 
-  const startAutoRotation = useCallback(() => {
+  // Automatinis slaidų keitimas kas 30 sek
+  const startAutoRotation = () => {
     if (autoRotateTimerRef.current) clearInterval(autoRotateTimerRef.current);
     autoRotateTimerRef.current = setInterval(() => {
       setCurrentIndex(prev => (prev + 1) % itemsRef.current.length);
-    }, 30000); // Tiksliai 30 sekundžių vienai skaidrei
-  }, []);
+    }, 30000);
+  };
 
   useEffect(() => {
     if (items.length === 0) return;
@@ -63,22 +60,42 @@ export default function NewsCarousel({ initialItems }: NewsCarouselProps) {
     return () => {
       if (autoRotateTimerRef.current) clearInterval(autoRotateTimerRef.current);
     };
-  }, [items.length, startAutoRotation]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [items.length]);
 
   const handleDotClick = (idx: number) => {
     setCurrentIndex(idx);
-    startAutoRotation(); // Reset timer
+    startAutoRotation();
   };
 
-  // Reset scroll position when the slide changes
   useEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTop = 0;
-    }
+    if (autoScrollTimerRef.current) clearInterval(autoScrollTimerRef.current);
+    if (autoScrollDelayRef.current) clearTimeout(autoScrollDelayRef.current);
+
+    prevIndexRef.current = currentIndex;
+
+    if (scrollRef.current) scrollRef.current.scrollTop = 0;
+
+    autoScrollDelayRef.current = setTimeout(() => {
+      autoScrollTimerRef.current = setInterval(() => {
+        const node = scrollRef.current;
+        if (!node) return;
+        if (node.scrollTop + node.clientHeight >= node.scrollHeight - 2) {
+          if (autoScrollTimerRef.current) clearInterval(autoScrollTimerRef.current);
+          return;
+        }
+        node.scrollTop += 1;
+      }, 80);
+    }, 3000);
+
+    return () => {
+      if (autoScrollTimerRef.current) clearInterval(autoScrollTimerRef.current);
+      if (autoScrollDelayRef.current) clearTimeout(autoScrollDelayRef.current);
+    };
   }, [currentIndex]);
 
+  // Naktinis perkrovimas 3:00 atminčiai išvalyti
   useEffect(() => {
-    // Daily hard reload at 3 AM to clear memory
     const now = new Date();
     const night = new Date(
       now.getFullYear(),
@@ -86,12 +103,9 @@ export default function NewsCarousel({ initialItems }: NewsCarouselProps) {
       now.getDate() + (now.getHours() >= 3 ? 1 : 0),
       3, 0, 0
     );
-    const msToNight = night.getTime() - now.getTime();
-
     const reloadTimeout = setTimeout(() => {
       window.location.reload();
-    }, msToNight);
-
+    }, night.getTime() - now.getTime());
     return () => clearTimeout(reloadTimeout);
   }, []);
 
@@ -102,40 +116,36 @@ export default function NewsCarousel({ initialItems }: NewsCarouselProps) {
       <div className={styles.newsContainer}>
         {items.map((item, idx) => {
           const isActive = idx === currentIndex;
+          // Renderinti turinį: tik aktyviam slaidui ir praeitam (per fade transiciją)
+          // Kiti slaidai DOM'e yra, bet be HTML turinio — taupo atmintį
+          const shouldRenderContent = isActive || idx === prevIndexRef.current;
 
           return (
             <div
               key={idx}
               className={`${styles.slide} ${isActive ? styles.activeSlide : styles.inactiveSlide}`}
             >
-              {/* Left Column: Image and Headline */}
               <div className={styles.leftColumn}>
-                <div className={styles.headlineContainer}>
-                  <h2 className={styles.headline}>{item.title}</h2>
-                </div>
+                <h2 className={styles.headline}>{item.title}</h2>
               </div>
 
-              {/* Right Column: Date and Clean Paragraphs */}
               <div className={styles.rightColumn}>
                 <div className={styles.dateLabel}>
                   {item.category} | {item.date}
                 </div>
-
                 <div
                   ref={isActive ? scrollRef : null}
                   className={styles.articleBody}
-                  tabIndex={0}
                 >
-                  <div
-                    dangerouslySetInnerHTML={{ __html: item.description }}
-                  />
+                  {shouldRenderContent && (
+                    <div dangerouslySetInnerHTML={{ __html: item.description }} />
+                  )}
                 </div>
               </div>
             </div>
           );
         })}
 
-        {/* Progress dots */}
         <div className={styles.progressContainer}>
           {items.map((_, idx) => (
             <button

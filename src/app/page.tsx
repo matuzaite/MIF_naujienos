@@ -1,6 +1,6 @@
 import Sidebar from '@/components/Sidebar/Sidebar';
 import NewsCarousel from '@/components/NewsCarousel/NewsCarousel';
-import styles from './page.module.css';
+import styles from './page.module.scss';
 import { fetchNews } from '@/lib/news'; // Importuojame tiesioginę duomenų gavimo funkciją
 
 // Ši eilutė nurodo serveriui niekada neįsiminti puslapio (no-cache)
