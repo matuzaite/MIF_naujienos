@@ -81,9 +81,9 @@ export default function NewsCarousel({ initialItems }: NewsCarouselProps) {
       if (!inner) return;
 
       // Grąžinam į viršų per CSS transform (ne scrollTop — Chromium 56 neveikia)
+      // Grąžinam į viršų naudojant top
       scrollPosRef.current = 0;
-      inner.style.webkitTransform = 'translateY(0px)';
-      inner.style.transform = 'translateY(0px)';
+      inner.style.top = '0px';
 
       autoScrollDelayRef.current = setTimeout(() => {
         autoScrollTimerRef.current = setInterval(() => {
@@ -98,9 +98,7 @@ export default function NewsCarousel({ initialItems }: NewsCarouselProps) {
           }
 
           scrollPosRef.current = Math.min(scrollPosRef.current + 1, maxScroll);
-          var t = 'translateY(-' + scrollPosRef.current + 'px)';
-          inn.style.webkitTransform = t;
-          inn.style.transform = t;
+          inn.style.top = '-' + scrollPosRef.current + 'px';
         }, 80);
       }, 3000);
     });

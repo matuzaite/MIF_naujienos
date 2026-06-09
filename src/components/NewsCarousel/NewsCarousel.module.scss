@@ -98,8 +98,11 @@
 }
 
 .articleBodyInner {
-  /* Vidinis div — js judina jį per style.transform = 'translateY(-Npx)' */
-  position: relative;
+  /* Vidinis div — js judina jį per style.top = '-Npx' */
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
   white-space: normal;
 
   p,
