@@ -18,6 +18,10 @@ export default function NewsCarousel({ initialItems }: NewsCarouselProps) {
   const [isPaused, setIsPaused] = useState(false);
   const isPausedRef = useRef(false);
   
+  useEffect(() => {
+    isPausedRef.current = isPaused;
+  }, [isPaused]);
+
   const autoRotateTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   // Fono naujienos atnaujinimas kas 30 min per XHR (Tizen suderinamas)
@@ -75,23 +79,28 @@ export default function NewsCarousel({ initialItems }: NewsCarouselProps) {
     let animationFrameId: number = 0;
 
     const delayTimeout = setTimeout(() => {
-      if (!scrollRef.current) return;
-
-      const scrollHeight = scrollRef.current.scrollHeight;
-      const clientHeight = scrollRef.current.clientHeight;
-
-      if (scrollHeight <= clientHeight) return;
-
       const scrollAnimation = () => {
-        if (scrollRef.current && !isPausedRef.current) {
-          if (scrollPosRef.current + clientHeight < scrollHeight - 2) {
+        const el = scrollRef.current;
+        if (!el) {
+          animationFrameId = requestAnimationFrame(scrollAnimation);
+          return;
+        }
+
+        if (!isPausedRef.current) {
+          // Read fresh each frame — S6 may not have layout ready at 2000ms
+          const scrollHeight = el.scrollHeight;
+          const clientHeight = el.clientHeight;
+
+          if (scrollHeight > clientHeight &&
+              scrollPosRef.current + clientHeight < scrollHeight - 2) {
             scrollPosRef.current += 0.5;
             const newScrollTop = Math.floor(scrollPosRef.current);
-            if (scrollRef.current.scrollTop !== newScrollTop) {
-              scrollRef.current.scrollTop = newScrollTop;
+            if (el.scrollTop !== newScrollTop) {
+              el.scrollTop = newScrollTop;
             }
           }
         }
+
         animationFrameId = requestAnimationFrame(scrollAnimation);
       };
 
