@@ -38,5 +38,9 @@ h1, h2, h3, h4, h5, h6, .brand-font {
 
 
 ::-webkit-scrollbar {
-  display: none;
+  /* Avoid display:none — some Tizen WebKit builds treat it as disabling
+     scroll functionality entirely, not just hiding the visual scrollbar */
+  width: 0;
+  height: 0;
+  background: transparent;
 }
