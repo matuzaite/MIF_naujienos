@@ -74,22 +74,17 @@ export default function NewsCarousel({ initialItems }: NewsCarouselProps) {
     }
   }, [currentIndex]);
 
-  // RAF scroll engine — heights cached once after delay to avoid layout thrashing
+  // RAF scroll engine — reads dimensions each frame for S6 (Tizen 3) compat
   useEffect(() => {
     let animationFrameId: number = 0;
+    let started = false;
 
     const delayTimeout = setTimeout(() => {
-      if (!scrollRef.current) return;
-
-      const scrollHeight = scrollRef.current.scrollHeight;
-      const clientHeight = scrollRef.current.clientHeight;
-
-      // No overflow — nothing to scroll, skip RAF entirely
-      if (scrollHeight <= clientHeight) return;
-
       const scrollAnimation = () => {
         if (scrollRef.current && !isPausedRef.current) {
-          if (scrollPosRef.current + clientHeight < scrollHeight - 2) {
+          const scrollHeight = scrollRef.current.scrollHeight;
+          const clientHeight = scrollRef.current.clientHeight;
+          if (scrollHeight > clientHeight && scrollPosRef.current + clientHeight < scrollHeight - 2) {
             scrollPosRef.current += 0.5;
             const newScrollTop = Math.floor(scrollPosRef.current);
             if (scrollRef.current.scrollTop !== newScrollTop) {
@@ -101,11 +96,12 @@ export default function NewsCarousel({ initialItems }: NewsCarouselProps) {
       };
 
       animationFrameId = requestAnimationFrame(scrollAnimation);
+      started = true;
     }, 2000);
 
     return () => {
       clearTimeout(delayTimeout);
-      if (animationFrameId) cancelAnimationFrame(animationFrameId);
+      if (started && animationFrameId) cancelAnimationFrame(animationFrameId);
     };
   }, [currentIndex]);
 
