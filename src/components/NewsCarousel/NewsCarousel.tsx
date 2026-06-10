@@ -74,33 +74,29 @@ export default function NewsCarousel({ initialItems }: NewsCarouselProps) {
     }
   }, [currentIndex]);
 
-  // RAF scroll engine
+  // RAF scroll engine — heights cached once after delay to avoid layout thrashing
   useEffect(() => {
     let animationFrameId: number = 0;
 
     const delayTimeout = setTimeout(() => {
+      if (!scrollRef.current) return;
+
+      const scrollHeight = scrollRef.current.scrollHeight;
+      const clientHeight = scrollRef.current.clientHeight;
+
+      // No overflow — nothing to scroll, skip RAF entirely
+      if (scrollHeight <= clientHeight) return;
+
       const scrollAnimation = () => {
-        const el = scrollRef.current;
-        if (!el) {
-          animationFrameId = requestAnimationFrame(scrollAnimation);
-          return;
-        }
-
-        if (!isPausedRef.current) {
-          // Read fresh each frame — S6 may not have layout ready at 2000ms
-          const scrollHeight = el.scrollHeight;
-          const clientHeight = el.clientHeight;
-
-          if (scrollHeight > clientHeight &&
-              scrollPosRef.current + clientHeight < scrollHeight - 2) {
+        if (scrollRef.current && !isPausedRef.current) {
+          if (scrollPosRef.current + clientHeight < scrollHeight - 2) {
             scrollPosRef.current += 0.5;
             const newScrollTop = Math.floor(scrollPosRef.current);
-            if (el.scrollTop !== newScrollTop) {
-              el.scrollTop = newScrollTop;
+            if (scrollRef.current.scrollTop !== newScrollTop) {
+              scrollRef.current.scrollTop = newScrollTop;
             }
           }
         }
-
         animationFrameId = requestAnimationFrame(scrollAnimation);
       };
 
@@ -152,8 +148,9 @@ export default function NewsCarousel({ initialItems }: NewsCarouselProps) {
                 <div
                   ref={isActive ? scrollRef : null}
                   className={styles.articleBody}
-                  dangerouslySetInnerHTML={{ __html: item.description }}
-                />
+                >
+                  <div dangerouslySetInnerHTML={{ __html: item.description }} />
+                </div>
               </div>
             </div>
           );
