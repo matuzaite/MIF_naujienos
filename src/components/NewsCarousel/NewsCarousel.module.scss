@@ -73,9 +73,6 @@
 
   /* Forces older browsers to respect boundary limits */
   min-height: 0;
-  /* Old-Chromium/Tizen trick: gives flex engine a resolved pixel baseline
-     so overflow-y: scroll on children propagates correctly */
-  height: 0;
 }
 
 .dateLabel {
@@ -99,15 +96,10 @@
   white-space: normal;
   outline: none;
   min-height: 0;
-  /* height: 100% removed — conflicts with flex: 1 on old WebKit/Tizen,
-     causing scrollHeight === clientHeight so JS sees no overflow */
+  height: 100%;
 
   &::-webkit-scrollbar {
-    /* Use zero-size instead of display:none — some Tizen WebKit builds
-       interpret display:none as disabling scroll functionality entirely */
-    width: 0;
-    height: 0;
-    background: transparent;
+    display: none;
   }
 
   p, div, blockquote, ul, ol {
