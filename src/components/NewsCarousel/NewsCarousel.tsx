@@ -86,10 +86,7 @@ export default function NewsCarousel({ initialItems }: NewsCarouselProps) {
           const clientHeight = scrollRef.current.clientHeight;
           if (scrollHeight > clientHeight && scrollPosRef.current + clientHeight < scrollHeight - 2) {
             scrollPosRef.current += 0.5;
-            const newScrollTop = Math.floor(scrollPosRef.current);
-            if (scrollRef.current.scrollTop !== newScrollTop) {
-              scrollRef.current.scrollTop = newScrollTop;
-            }
+            scrollRef.current.scrollTop = Math.floor(scrollPosRef.current);
           }
         }
         animationFrameId = requestAnimationFrame(scrollAnimation);
