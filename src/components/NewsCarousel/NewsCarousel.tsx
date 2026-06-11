@@ -84,7 +84,9 @@ export default function NewsCarousel({ initialItems }: NewsCarouselProps) {
   useEffect(() => {
     let animationFrameId: number = 0;
 
-    const delayTimeout = setTimeout(() => {
+    const launchEngine = () => {
+      if (animationFrameId) cancelAnimationFrame(animationFrameId);
+      animationFrameId = 0;
       if (!scrollRef.current) return;
 
       // CACHE heights ONCE. This saves the S6 from burning out its CPU.
@@ -111,10 +113,23 @@ export default function NewsCarousel({ initialItems }: NewsCarouselProps) {
       };
 
       animationFrameId = requestAnimationFrame(scrollAnimation);
-    }, 2000);
+    };
+
+    const delayTimeout = setTimeout(launchEngine, 2000);
+
+    // If images load after the initial height check, relaunch with correct heights
+    const imgListenerTimeout = setTimeout(() => {
+      if (!scrollRef.current) return;
+      scrollRef.current.querySelectorAll('img').forEach(img => {
+        if (!img.complete) {
+          img.addEventListener('load', () => setTimeout(launchEngine, 200), { once: true });
+        }
+      });
+    }, 500);
 
     return () => {
       clearTimeout(delayTimeout);
+      clearTimeout(imgListenerTimeout);
       if (animationFrameId) cancelAnimationFrame(animationFrameId);
     };
   }, [currentIndex]); // Now only triggers when the slide changes, not on hover

@@ -8,7 +8,7 @@
       "section[itemprop='articleBody']",
       "div.item-page"
     ],
-    "maxItems": 6,
+    "maxItems": 4,
     "maxDetailedItems": 5,
     "revalidate": 60
   },
