@@ -122,7 +122,11 @@ export default function NewsCarousel({ initialItems }: NewsCarouselProps) {
       if (!scrollRef.current) return;
       scrollRef.current.querySelectorAll('img').forEach(img => {
         if (!img.complete) {
-          img.addEventListener('load', () => setTimeout(launchEngine, 200), { once: true });
+          const handler = () => {
+            img.removeEventListener('load', handler);
+            setTimeout(launchEngine, 200);
+          };
+          img.addEventListener('load', handler);
         }
       });
     }, 500);
