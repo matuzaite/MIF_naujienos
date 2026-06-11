@@ -164,6 +164,9 @@ export default function NewsCarousel({ initialItems }: NewsCarouselProps) {
       <div className={styles.newsContainer}>
         {items.map((item, idx) => {
           const isActive = idx === currentIndex;
+          const isNext = idx === (currentIndex + 1) % items.length;
+
+          if (!isActive && !isNext) return null;
 
           return (
             <div
