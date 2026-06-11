@@ -1,13 +1,5 @@
 import type { Metadata } from "next";
-import { Raleway } from "next/font/google";
 import "./globals.css";
-
-const raleway = Raleway({
-  subsets: ['latin', 'latin-ext'],
-  weight: ['400', '700'],
-  display: 'swap',
-  variable: '--font-raleway',
-});
 
 export const metadata: Metadata = {
   title: "VU MIF Naujienų Portalas",
@@ -31,7 +23,7 @@ export default function RootLayout({
         {/* Provides missing modern JavaScript functions (like replaceAll, flatMap) for old Chromium */}
         <script src="https://cdnjs.cloudflare.com/ajax/libs/core-js-bundle/3.38.1/minified.js"></script>
       </head>
-      <body className={raleway.variable}>{children}</body>
+      <body>{children}</body>
     </html>
   );
 }

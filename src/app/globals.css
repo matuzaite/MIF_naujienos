@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Raleway:wght@300;400;500;600;700;800;900&display=swap');
+
 :root {
   --sidebar-bg: #0D1631;
   --bg-color: #0F1A36;
@@ -18,7 +20,7 @@
 }
 
 body {
-  font-family: var(--font-raleway), sans-serif;
+  font-family: 'Raleway', sans-serif;
   background-color: var(--bg-color);
   color: var(--text-primary);
   height: 100vh;
@@ -28,7 +30,7 @@ body {
 }
 
 h1, h2, h3, h4, h5, h6, .brand-font {
-  font-family: var(--font-raleway), sans-serif;
+  font-family: 'Raleway', sans-serif;
   font-weight: 700;
 }
 
