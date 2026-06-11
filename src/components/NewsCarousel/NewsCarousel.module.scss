@@ -52,6 +52,40 @@
   background: white;
 }
 
+/* Image is hidden from the left column — it appears at the top of articleBody instead */
+.imageWrapper {
+  position: relative;
+  width: 85%;
+  aspect-ratio: 16 / 10;
+
+  /* ADD THESE 2 LINES: Fallback for S6 screens that don't support aspect-ratio */
+  padding-top: 62.5%;
+  height: 0;
+
+  z-index: 2;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid var(--border-color);
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.08);
+  margin-bottom: 20px;
+}
+
+/* ADD THIS BLOCK: Tells modern S9 screens to ignore the S6 fallback */
+@supports (aspect-ratio: 16 / 10) {
+  .imageWrapper {
+    padding-top: 0;
+    height: auto;
+  }
+}
+
+.imageGradient {
+  display: none;
+}
+
+.mainImage {
+  display: none;
+}
+
 .headlineContainer {
   width: 100%;
   padding: 0;
@@ -87,6 +121,16 @@
   letter-spacing: 0.12em;
   padding-bottom: 1rem;
   border-bottom: 1px solid var(--border-color);
+}
+
+/* The mainImageInline is rendered by TSX before the dangerouslySetInnerHTML block */
+.mainImageInline {
+  max-width: 100%;
+  height: auto;
+  border-radius: 10px;
+  display: block;
+  margin-bottom: 1.5rem;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
 }
 
 .articleBody {

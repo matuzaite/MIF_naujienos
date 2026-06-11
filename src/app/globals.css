@@ -2,6 +2,8 @@
 
 :root {
   --sidebar-bg: #0D1631;
+  --sidebar-text: #FFFFFF;
+  --sidebar-text-muted: rgba(255, 255, 255, 0.60);
   --bg-color: #0F1A36;
   --bg-white: #FFFFFF;
   --text-primary: #1A1A2E;
@@ -32,6 +34,15 @@ body {
 h1, h2, h3, h4, h5, h6, .brand-font {
   font-family: 'Raleway', sans-serif;
   font-weight: 700;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.6s ease forwards;
 }
 
 ::-webkit-scrollbar {
