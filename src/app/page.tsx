@@ -1,23 +1,27 @@
 import Sidebar from '@/components/Sidebar/Sidebar';
 import NewsCarousel from '@/components/NewsCarousel/NewsCarousel';
-import styles from './page.module.scss';
-import { fetchNews } from '@/lib/news'; // Importuojame tiesioginę duomenų gavimo funkciją
+import styles from './page.module.css';
 
-// Ši eilutė nurodo serveriui niekada neįsiminti puslapio (no-cache)
-// ir visada sugeneruoti naują versiją, kai tik MagicINFO atnaujina ekraną.
+// 1. IMPORTUOJAME TIESIOGIAI IŠ LIB FAILO
+import { fetchNews } from '@/lib/news'; 
+
 export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
-// Paverčiame komponentą asinchroniniu (async)
 export default async function Home() {
-  // Serveris pats ištraukia naujienas PRIEŠ išsiųsdamas puslapį į televizorių!
-  const newsItems = await fetchNews();
+  let news: any[] = [];
+  try {
+    // 2. KVIEČIAME FUNKCIJĄ TIESIOGIAI (Jokio fetch į localhost!)
+    news = await fetchNews(); 
+  } catch (e) {
+    console.error("Duomenų gavimo klaida:", e);
+  }
 
   return (
     <main className={styles.main}>
       <Sidebar />
       <div className={styles.contentArea}>
-        {/* Dabar į karuselę paduodame tikras naujienas, o ne tuščią masyvą */}
-        <NewsCarousel initialItems={newsItems} />
+        <NewsCarousel initialItems={news} />
       </div>
     </main>
   );
