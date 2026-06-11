@@ -23,12 +23,8 @@ function fixImageSrcs(html: string): string {
         const best = (dataSrc && !dataSrc.startsWith('data:') ? dataSrc : null)
                   ?? (src && !src.startsWith('data:') ? src : null);
         if (best) {
-            try {
-                const fullUrl = new URL(best, BASE).href;
-                img.setAttribute('src', `/_next/image?url=${encodeURIComponent(fullUrl)}&w=1200&q=75`);
-            } catch {
-                img.setAttribute('src', best);
-            }
+            try { img.setAttribute('src', new URL(best, BASE).href); }
+            catch { img.setAttribute('src', best); }
         }
     });
     return root.innerHTML;
