@@ -1,65 +1,48 @@
 'use client';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import styles from './TimetableView.module.css';
-import { TimetableEntry, TimetableData } from '@/lib/timetable';
+import { TimetableData } from '@/lib/timetable';
 
-function TimetableTable({ title, entries }: { title: string; entries: TimetableEntry[] }) {
+function TimetableTable({ title, bodyHtml }: { title: string; bodyHtml: string }) {
   return (
-    <table className={styles.table}>
-      <thead>
-        <tr>
-          <th className={styles.firstHeader} colSpan={4}>{title}</th>
-        </tr>
-        <tr>
-          <th className={`${styles.subHeader} ${styles.center}`}>Laikas</th>
-          <th className={styles.subHeader}>Dalykas<br />Dėstytojai</th>
-          <th className={styles.subHeader}>Grupės</th>
-          <th className={`${styles.subHeader} ${styles.center}`}>Auditorija</th>
-        </tr>
-      </thead>
-      <tbody>
-        {entries.length === 0 ? (
+    <div className={styles.tableWrapper}>
+      <table className={styles.table}>
+        <thead>
           <tr>
-            <td colSpan={4} className={`${styles.td} ${styles.center}`}>Paskaitų nėra</td>
+            <th className={styles.firstHeader} colSpan={4}>{title}</th>
           </tr>
-        ) : entries.map((entry, i) => (
-          <tr key={i} className={i % 2 === 0 ? styles.rowEven : styles.rowOdd}>
-            <td className={`${styles.td} ${styles.center} ${styles.nowrap}`}>{entry.time}</td>
-            <td className={`${styles.td} ${styles.subjectCell}`}>
-              <strong className={styles.subjectLt}>{entry.subjectLt}</strong>
-              {entry.subjectEn && (
-                <><br /><strong className={styles.subjectEn}>{entry.subjectEn}</strong></>
-              )}
-              {entry.instructors && (
-                <><br /><span>{entry.instructors}</span></>
-              )}
-            </td>
-            <td className={`${styles.td} ${styles.groupCell}`}>{entry.groups}</td>
-            <td className={`${styles.td} ${styles.center}`}>{entry.rooms}</td>
+          <tr>
+            <th className={`${styles.subHeader} ${styles.center}`}>Laikas</th>
+            <th className={styles.subHeader}>Dalykas<br />Dėstytojai</th>
+            <th className={styles.subHeader}>Grupės</th>
+            <th className={`${styles.subHeader} ${styles.center}`}>Auditorija</th>
           </tr>
-        ))}
-      </tbody>
-    </table>
+        </thead>
+        <tbody dangerouslySetInnerHTML={{
+          __html: bodyHtml || '<tr><td colspan="4" class="text-center">Paskaitų nėra</td></tr>'
+        }} />
+      </table>
+    </div>
   );
 }
 
 export default function TimetableView() {
-  const [data, setData] = useState<TimetableData>({ current: [], upcoming: [] });
+  const [data, setData] = useState<TimetableData>({ currentHtml: '', upcomingHtml: '' });
   const [time, setTime] = useState('');
 
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const res = await fetch(`/api/timetable?t=${Date.now()}`);
-        const json = await res.json();
-        setData(json);
-      } catch {}
+    var xhr = new XMLHttpRequest();
+    xhr.open('GET', '/api/timetable?t=' + Date.now(), true);
+    xhr.onreadystatechange = function () {
+      if (xhr.readyState === 4 && xhr.status === 200) {
+        try { setData(JSON.parse(xhr.responseText)); } catch {}
+      }
     };
-    fetchData();
+    xhr.send();
   }, []);
 
   useEffect(() => {
-    const tick = () => {
+    var tick = function () {
       setTime(new Date().toLocaleTimeString('lt-LT', {
         timeZone: 'Europe/Vilnius',
         hour: '2-digit',
@@ -69,11 +52,11 @@ export default function TimetableView() {
       }));
     };
     tick();
-    const id = setInterval(tick, 500);
-    return () => clearInterval(id);
+    var id = setInterval(tick, 500);
+    return function () { clearInterval(id); };
   }, []);
 
-  const today = new Date().toLocaleDateString('lt-LT', {
+  var today = new Date().toLocaleDateString('lt-LT', {
     timeZone: 'Europe/Vilnius',
     month: 'long',
     day: 'numeric',
@@ -87,10 +70,10 @@ export default function TimetableView() {
       </div>
       <div className={styles.body}>
         <div className={styles.column}>
-          <TimetableTable title="Vykstančios paskaitos" entries={data.current} />
+          <TimetableTable title="Vykstančios paskaitos" bodyHtml={data.currentHtml} />
         </div>
         <div className={styles.column}>
-          <TimetableTable title="Artėjančios paskaitos" entries={data.upcoming} />
+          <TimetableTable title="Artėjančios paskaitos" bodyHtml={data.upcomingHtml} />
         </div>
       </div>
     </div>

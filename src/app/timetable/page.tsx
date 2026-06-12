@@ -1,49 +1,9 @@
-import { fetchTimetable, TimetableEntry } from '@/lib/timetable';
+import { fetchTimetable } from '@/lib/timetable';
 import TimetableClock from '@/components/TimetableClock/TimetableClock';
 import styles from './page.module.css';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
-
-function TimetableTable({ title, entries }: { title: string; entries: TimetableEntry[] }) {
-  return (
-    <table className={styles.table}>
-      <thead>
-        <tr>
-          <th className={styles.firstHeader} colSpan={4}>{title}</th>
-        </tr>
-        <tr>
-          <th className={`${styles.subHeader} ${styles.center}`}>Laikas</th>
-          <th className={styles.subHeader}>Dalykas<br />Dėstytojai</th>
-          <th className={styles.subHeader}>Grupės</th>
-          <th className={`${styles.subHeader} ${styles.center}`}>Auditorija</th>
-        </tr>
-      </thead>
-      <tbody>
-        {entries.length === 0 ? (
-          <tr>
-            <td colSpan={4} className={`${styles.td} ${styles.center}`}>Paskaitų nėra</td>
-          </tr>
-        ) : entries.map((entry, i) => (
-          <tr key={i} className={i % 2 === 0 ? styles.rowEven : styles.rowOdd}>
-            <td className={`${styles.td} ${styles.center} ${styles.nowrap}`}>{entry.time}</td>
-            <td className={`${styles.td} ${styles.subjectCell}`}>
-              <strong className={styles.subjectLt}>{entry.subjectLt}</strong>
-              {entry.subjectEn && (
-                <><br /><strong className={styles.subjectEn}>{entry.subjectEn}</strong></>
-              )}
-              {entry.instructors && (
-                <><br /><span>{entry.instructors}</span></>
-              )}
-            </td>
-            <td className={`${styles.td} ${styles.groupCell}`}>{entry.groups}</td>
-            <td className={`${styles.td} ${styles.center}`}>{entry.rooms}</td>
-          </tr>
-        ))}
-      </tbody>
-    </table>
-  );
-}
 
 export default async function TimetablePage() {
   const data = await fetchTimetable();
@@ -64,10 +24,40 @@ export default async function TimetablePage() {
       </div>
       <div className={styles.body}>
         <div className={styles.column}>
-          <TimetableTable title="Vykstančios paskaitos" entries={data.current} />
+          <div className={styles.tableWrapper}>
+            <table className={styles.table}>
+              <thead>
+                <tr><th className={styles.firstHeader} colSpan={4}>Vykstančios paskaitos</th></tr>
+                <tr>
+                  <th className={`${styles.subHeader} ${styles.center}`}>Laikas</th>
+                  <th className={styles.subHeader}>Dalykas<br />Dėstytojai</th>
+                  <th className={styles.subHeader}>Grupės</th>
+                  <th className={`${styles.subHeader} ${styles.center}`}>Auditorija</th>
+                </tr>
+              </thead>
+              <tbody dangerouslySetInnerHTML={{
+                __html: data.currentHtml || '<tr><td colspan="4" class="text-center">Paskaitų nėra</td></tr>'
+              }} />
+            </table>
+          </div>
         </div>
         <div className={styles.column}>
-          <TimetableTable title="Artėjančios paskaitos" entries={data.upcoming} />
+          <div className={styles.tableWrapper}>
+            <table className={styles.table}>
+              <thead>
+                <tr><th className={styles.firstHeader} colSpan={4}>Artėjančios paskaitos</th></tr>
+                <tr>
+                  <th className={`${styles.subHeader} ${styles.center}`}>Laikas</th>
+                  <th className={styles.subHeader}>Dalykas<br />Dėstytojai</th>
+                  <th className={styles.subHeader}>Grupės</th>
+                  <th className={`${styles.subHeader} ${styles.center}`}>Auditorija</th>
+                </tr>
+              </thead>
+              <tbody dangerouslySetInnerHTML={{
+                __html: data.upcomingHtml || '<tr><td colspan="4" class="text-center">Paskaitų nėra</td></tr>'
+              }} />
+            </table>
+          </div>
         </div>
       </div>
     </div>

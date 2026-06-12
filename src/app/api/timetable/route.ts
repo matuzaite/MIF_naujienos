@@ -8,6 +8,6 @@ export async function GET() {
     const data = await fetchTimetable();
     return NextResponse.json(data);
   } catch {
-    return NextResponse.json({ current: [], upcoming: [] });
+    return NextResponse.json({ currentHtml: '', upcomingHtml: '' });
   }
 }

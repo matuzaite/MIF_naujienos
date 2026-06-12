@@ -36,66 +36,59 @@
   padding: 0 2px;
 }
 
+/* Wrapper scopes Bootstrap class names that come from the raw HTML */
+.tableWrapper {
+  width: 100%;
+}
+
 .table {
   width: 100%;
   border-collapse: collapse;
+  border-spacing: 0;
 }
 
+/* Bootstrap .table-bordered td styles, scoped to our wrapper */
+.tableWrapper :global(tbody tr td) {
+  padding: 8px;
+  line-height: 1.42857143;
+  vertical-align: top;
+  border: 1px solid #ddd;
+}
+
+/* Bootstrap .table-striped */
+.tableWrapper :global(tbody tr:nth-of-type(odd)) {
+  background-color: #f9f9f9;
+}
+
+/* Bootstrap .text-center used on td elements in the raw HTML */
+.tableWrapper :global(.text-center) {
+  text-align: center;
+}
+
+/* Maroon section header row */
 .firstHeader {
   text-transform: uppercase;
   background-color: #78003F;
+  border: 1px solid #78003F;
   color: white;
   font-size: 1.2em;
   letter-spacing: 2px;
   text-align: center;
   padding: 8px;
-  border: 1px solid #78003F;
 }
 
+/* Column sub-headers */
 .subHeader {
   vertical-align: middle;
   text-transform: uppercase;
   background-color: #F6E7E7;
   font-size: 0.8em;
   letter-spacing: 2px;
-  padding: 6px 8px;
-  border: 1px solid #dee2e6;
+  padding: 8px;
+  border: 1px solid #ddd;
+  border-bottom-width: 2px;
 }
 
 .center {
   text-align: center;
-}
-
-.td {
-  padding: 8px;
-  border: 1px solid #dee2e6;
-  vertical-align: middle;
-}
-
-.nowrap {
-  white-space: nowrap;
-}
-
-.rowEven {
-  background-color: white;
-}
-
-.rowOdd {
-  background-color: rgba(0, 0, 0, 0.05);
-}
-
-.subjectCell {
-  font-size: 0.8em;
-}
-
-.subjectLt {
-  font-size: 1.45em;
-}
-
-.subjectEn {
-  font-size: 1.20em;
-}
-
-.groupCell {
-  font-size: 0.6em;
 }
