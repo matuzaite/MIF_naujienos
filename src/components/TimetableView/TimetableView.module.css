@@ -32,8 +32,21 @@
 
 .column {
   flex: 1;
-  overflow-y: hidden;
+  min-height: 0;
   padding: 0 2px;
+  display: flex;
+  flex-direction: column;
+}
+
+.tableContainer {
+  flex: 1;
+  overflow-y: scroll;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.tableContainer::-webkit-scrollbar {
+  display: none;
 }
 
 /* Wrapper scopes Bootstrap class names that come from the raw HTML */
