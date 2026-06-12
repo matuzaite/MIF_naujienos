@@ -1,7 +1,5 @@
 'use client';
-import { useState, useEffect, useRef, useCallback } from 'react';
-import Image from 'next/image';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect, useRef } from 'react';
 import styles from './NewsCarousel.module.scss';
 
 interface NewsCarouselProps {
@@ -9,70 +7,63 @@ interface NewsCarouselProps {
 }
 
 export default function NewsCarousel({ initialItems }: NewsCarouselProps) {
-  const router = useRouter();
   const [items, setItems] = useState<any[]>(initialItems);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
-  const autoRotateTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const autoRotateTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const itemsRef = useRef(items);
+  const scrollPosRef = useRef(0);
+  const isPausedRef = useRef(false);
 
+  useEffect(() => { itemsRef.current = items; }, [items]);
+  useEffect(() => { isPausedRef.current = isPaused; }, [isPaused]);
+
+  // Background news refresh every 30 minutes
   useEffect(() => {
-    const fetchLatestNews = async () => {
-      try {
-        // Naudojame ir laiką, ir Math.random(), nes TV vidiniai laikrodžiai dažnai būna "užšalę"
-        const res = await fetch(`/api/news?t=${new Date().getTime()}&r=${Math.random()}`);
-
-        const freshData = await res.json();
-
-        // Jei gavome naujienų, pakeičiame karuselės duomenis
-        if (freshData && freshData.length > 0) {
-          setItems(freshData);
-          // Apsauga: jei buvome 5 slaide, o naujienų liko tik 4, grįžtame į pradžią
-          setCurrentIndex((prev) => (prev >= freshData.length ? 0 : prev));
+    const fetchLatestNews = () => {
+      var xhr = new XMLHttpRequest();
+      xhr.open('GET', '/api/news?t=' + new Date().getTime() + '&r=' + Math.random(), true);
+      xhr.onreadystatechange = function () {
+        if (xhr.readyState === 4 && xhr.status === 200) {
+          try {
+            var freshData = JSON.parse(xhr.responseText);
+            if (freshData && freshData.length > 0) {
+              setItems(freshData);
+              setCurrentIndex(function (prev) { return prev >= freshData.length ? 0 : prev; });
+            }
+          } catch (e) {}
         }
-      } catch (error) {
-        console.error("Klaida gaunant šviežias naujienas:", error);
-      }
+      };
+      xhr.send();
     };
-
-    // Iškviečiame funkciją iškart, kai tik komponentas atsiranda ekrane
     fetchLatestNews();
-
-    // Automatiškai ir tyliai fone ieškome naujų žinių kas 30 minučių (1800000 ms)
-    const updateInterval = setInterval(fetchLatestNews, 1800000);
-
-    return () => clearInterval(updateInterval);
+    var id = setInterval(fetchLatestNews, 1800000);
+    return function () { clearInterval(id); };
   }, []);
 
-  const startAutoRotation = useCallback(() => {
+  // Slide auto-rotation — uses itemsRef to avoid stale closure on old Chromium
+  const startAutoRotation = function () {
     if (autoRotateTimerRef.current) clearInterval(autoRotateTimerRef.current);
-    autoRotateTimerRef.current = setInterval(() => {
-      setCurrentIndex(prev => (prev + 1) % items.length);
-    }, 30000); // 30 seconds per slide
-  }, [items.length]);
+    autoRotateTimerRef.current = setInterval(function () {
+      setCurrentIndex(function (prev) { return (prev + 1) % itemsRef.current.length; });
+    }, 30000);
+  };
 
   useEffect(() => {
     if (items.length === 0) return;
     startAutoRotation();
-    return () => {
+    return function () {
       if (autoRotateTimerRef.current) clearInterval(autoRotateTimerRef.current);
     };
-  }, [items.length, startAutoRotation]);
+  }, [items.length]);
 
   const handleDotClick = (idx: number) => {
     setCurrentIndex(idx);
-    startAutoRotation(); // Reset timer
+    startAutoRotation();
   };
 
-  const scrollPosRef = useRef(0);
-  const isPausedRef = useRef(false);
-
-  // Sync the pause state without restarting the animation loop
-  useEffect(() => {
-    isPausedRef.current = isPaused;
-  }, [isPaused]);
-
-  // 1. Reset scroll position ONLY when the slide actually changes
+  // Reset scroll when slide changes
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = 0;
@@ -80,49 +71,41 @@ export default function NewsCarousel({ initialItems }: NewsCarouselProps) {
     }
   }, [currentIndex]);
 
-  // 2. High-performance scroll engine built for older TVs
+  // RAF scroll engine for older TVs
   useEffect(() => {
-    let animationFrameId: number = 0;
+    var animationFrameId = 0;
 
-    const launchEngine = () => {
+    var launchEngine = function () {
       if (animationFrameId) cancelAnimationFrame(animationFrameId);
       animationFrameId = 0;
       if (!scrollRef.current) return;
 
-      // CACHE heights ONCE. This saves the S6 from burning out its CPU.
-      const scrollHeight = scrollRef.current.scrollHeight;
-      const clientHeight = scrollRef.current.clientHeight;
-
-      // If text doesn't overflow, don't waste memory running a loop
+      var scrollHeight = scrollRef.current.scrollHeight;
+      var clientHeight = scrollRef.current.clientHeight;
       if (scrollHeight <= clientHeight) return;
 
-      const scrollAnimation = () => {
+      var scrollAnimation = function () {
         if (scrollRef.current && !isPausedRef.current) {
           if (scrollPosRef.current + clientHeight < scrollHeight - 2) {
-            scrollPosRef.current += 0.5; // Scroll speed (approx 30px per sec on 60fps)
-            const newScrollTop = Math.floor(scrollPosRef.current);
-
-            // ONLY write to the DOM if the pixel actually changed to prevent flickering
+            scrollPosRef.current += 0.5;
+            var newScrollTop = Math.floor(scrollPosRef.current);
             if (scrollRef.current.scrollTop !== newScrollTop) {
               scrollRef.current.scrollTop = newScrollTop;
             }
           }
         }
-        // Keep the loop alive seamlessly
         animationFrameId = requestAnimationFrame(scrollAnimation);
       };
-
       animationFrameId = requestAnimationFrame(scrollAnimation);
     };
 
-    const delayTimeout = setTimeout(launchEngine, 2000);
+    var delayTimeout = setTimeout(launchEngine, 2000);
 
-    // If images load after the initial height check, relaunch with correct heights
-    const imgListenerTimeout = setTimeout(() => {
+    var imgListenerTimeout = setTimeout(function () {
       if (!scrollRef.current) return;
-      scrollRef.current.querySelectorAll('img').forEach(img => {
+      scrollRef.current.querySelectorAll('img').forEach(function (img: HTMLImageElement) {
         if (!img.complete) {
-          const handler = () => {
+          var handler = function () {
             img.removeEventListener('load', handler);
             setTimeout(launchEngine, 200);
           };
@@ -131,31 +114,26 @@ export default function NewsCarousel({ initialItems }: NewsCarouselProps) {
       });
     }, 500);
 
-    return () => {
+    return function () {
       clearTimeout(delayTimeout);
       clearTimeout(imgListenerTimeout);
       if (animationFrameId) cancelAnimationFrame(animationFrameId);
     };
-  }, [currentIndex]); // Now only triggers when the slide changes, not on hover
+  }, [currentIndex]);
+
+  // Daily hard reload at 3 AM to clear memory
   useEffect(() => {
-    // Daily hard reload at 3 AM to clear memory
-    const now = new Date();
-    const night = new Date(
+    var now = new Date();
+    var night = new Date(
       now.getFullYear(),
       now.getMonth(),
       now.getDate() + (now.getHours() >= 3 ? 1 : 0),
       3, 0, 0
     );
-    const msToNight = night.getTime() - now.getTime();
-
-    const reloadTimeout = setTimeout(() => {
-      window.location.reload();
-    }, msToNight);
-
-    return () => clearTimeout(reloadTimeout);
+    var msToNight = night.getTime() - now.getTime();
+    var reloadTimeout = setTimeout(function () { window.location.reload(); }, msToNight);
+    return function () { clearTimeout(reloadTimeout); };
   }, []);
-
-
 
   if (items.length === 0) return <div className={styles.loading}>Naujienų nerasta</div>;
 
@@ -165,7 +143,6 @@ export default function NewsCarousel({ initialItems }: NewsCarouselProps) {
         {items.map((item, idx) => {
           const isActive = idx === currentIndex;
           const isNext = idx === (currentIndex + 1) % items.length;
-
           if (!isActive && !isNext) return null;
 
           return (
@@ -173,21 +150,16 @@ export default function NewsCarousel({ initialItems }: NewsCarouselProps) {
               key={idx}
               className={`${styles.slide} ${isActive ? styles.activeSlide : styles.inactiveSlide}`}
             >
-              {/* Left Column: Image and Headline */}
               <div className={styles.leftColumn}>
-
-
                 <div className={styles.headlineContainer}>
                   <h2 className={styles.headline}>{item.title}</h2>
                 </div>
               </div>
 
-              {/* Right Column: Date and Clean Paragraphs */}
               <div className={styles.rightColumn}>
                 <div className={styles.dateLabel}>
                   {item.category} | {item.date}
                 </div>
-
                 <div
                   ref={isActive ? scrollRef : null}
                   className={styles.articleBody}
@@ -195,16 +167,13 @@ export default function NewsCarousel({ initialItems }: NewsCarouselProps) {
                   onMouseLeave={() => setIsPaused(false)}
                   tabIndex={0}
                 >
-                  <div
-                    dangerouslySetInnerHTML={{ __html: item.description }}
-                  />
+                  <div dangerouslySetInnerHTML={{ __html: item.description }} />
                 </div>
               </div>
             </div>
           );
         })}
 
-        {/* Progress dots */}
         <div className={styles.progressContainer}>
           {items.map((_, idx) => (
             <button
