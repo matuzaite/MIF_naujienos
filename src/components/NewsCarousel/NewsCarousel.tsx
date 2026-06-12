@@ -48,7 +48,7 @@ export default function NewsCarousel({ initialItems }: NewsCarouselProps) {
     if (autoRotateTimerRef.current) clearInterval(autoRotateTimerRef.current);
     autoRotateTimerRef.current = setInterval(() => {
       setCurrentIndex(prev => (prev + 1) % items.length);
-    }, 36000); // 36 seconds per slide
+    }, 30000); // 30 seconds per slide
   }, [items.length]);
 
   useEffect(() => {

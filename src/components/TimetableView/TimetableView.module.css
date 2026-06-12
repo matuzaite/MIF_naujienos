@@ -1,0 +1,101 @@
+.page {
+  font-family: Arial, sans-serif;
+  font-size: 2em;
+  color: #414141;
+  background-color: white;
+  position: fixed;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  z-index: 100;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 4px 12px;
+}
+
+.pageHeader {
+  color: #78003F;
+  font-size: 2em;
+  font-family: Arial, sans-serif;
+}
+
+.body {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.column {
+  flex: 1;
+  overflow-y: hidden;
+  padding: 0 2px;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.firstHeader {
+  text-transform: uppercase;
+  background-color: #78003F;
+  color: white;
+  font-size: 1.2em;
+  letter-spacing: 2px;
+  text-align: center;
+  padding: 8px;
+  border: 1px solid #78003F;
+}
+
+.subHeader {
+  vertical-align: middle;
+  text-transform: uppercase;
+  background-color: #F6E7E7;
+  font-size: 0.8em;
+  letter-spacing: 2px;
+  padding: 6px 8px;
+  border: 1px solid #dee2e6;
+}
+
+.center {
+  text-align: center;
+}
+
+.td {
+  padding: 8px;
+  border: 1px solid #dee2e6;
+  vertical-align: middle;
+}
+
+.nowrap {
+  white-space: nowrap;
+}
+
+.rowEven {
+  background-color: white;
+}
+
+.rowOdd {
+  background-color: rgba(0, 0, 0, 0.05);
+}
+
+.subjectCell {
+  font-size: 0.8em;
+}
+
+.subjectLt {
+  font-size: 1.45em;
+}
+
+.subjectEn {
+  font-size: 1.20em;
+}
+
+.groupCell {
+  font-size: 0.6em;
+}
